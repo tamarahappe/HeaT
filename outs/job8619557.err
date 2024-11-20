@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "/gpfs/home4/thappe/HeaT/hpc/t2m_decomposition_ridge.py", line 2, in <module>
+    import xarray as xr
+  File "/home/thappe/.local/lib/python3.9/site-packages/xarray/__init__.py", line 3, in <module>
+    from xarray import testing, tutorial
+  File "/home/thappe/.local/lib/python3.9/site-packages/xarray/testing/__init__.py", line 1, in <module>
+    from xarray.testing.assertions import (  # noqa: F401
+  File "/home/thappe/.local/lib/python3.9/site-packages/xarray/testing/assertions.py", line 8, in <module>
+    import pandas as pd
+  File "/home/thappe/.local/lib/python3.9/site-packages/pandas/__init__.py", line 22, in <module>
+    from pandas.compat import is_numpy_dev as _is_numpy_dev  # pyright: ignore # noqa:F401
+  File "/home/thappe/.local/lib/python3.9/site-packages/pandas/compat/__init__.py", line 18, in <module>
+    from pandas.compat.numpy import (
+  File "/home/thappe/.local/lib/python3.9/site-packages/pandas/compat/numpy/__init__.py", line 23, in <module>
+    raise ImportError(
+ImportError: this version of pandas is incompatible with numpy < 1.20.3
+your numpy version is 1.20.0.
+Please upgrade numpy to >= 1.20.3 to use this pandas version

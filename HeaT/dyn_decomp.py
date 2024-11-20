@@ -4,18 +4,29 @@ import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 from sklearn.linear_model import Ridge
 import pandas as pd
+import sys
 
 data_path = "/home/thappe/data/"
+
+sys.path.append("/home/thappe/HeaT")
+from HeaT.custom_enet import CustomENet, CustomENetCV
+# from scipy.optimize import minimize_scalar
+# from sklearn.linear_model import ElasticNetCV
+# from sklearn.preprocessing import StandardScaler
+# from statsmodels.api import OLS, add_constant
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.model_selection import RepeatedKFold
 
 def preprocess_data(lon, lat, 
                      t2m, stream500, yearly_GMST,
                   lower_year=1940, upper_year=2022,
-                 window=20):
+                 window=20, LENTIS_GRID=True):
     """
     Takes input data and selects the correct time-period, appropiate (lon,lat) and window.
     It prepares the GMST yearly data to reshape to adjust to the timeperiod of the temperature data.
     It also standardizes the input and output data.
     It concatenates the x_input data into one array
+    LENTIS_GRID parameter is important for accessing the correct t2m lat/lon values
     
     it returns Y_, X_ ; the data for the regression model
     it returns t2m_mean and t2m_std; the gridpoint statistics
@@ -29,7 +40,12 @@ def preprocess_data(lon, lat,
     ###t2m###
     t2m_cut = t2m.sel(time=t2m.time.dt.year>= lower_year)
     t2m_cut= t2m_cut.sel(time=t2m_cut.time.dt.year<= upper_year)
-    t2m_cut = t2m_cut.sel(longitude=lon, latitude=lat)
+    
+    if LENTIS_GRID:
+        t2m_cut = t2m_cut.sel(lon=lon, lat=lat)
+    elif not LENTIS_GRID:
+        t2m_cut = t2m_cut.sel(longitude=lon, latitude=lat)
+
     ###GMST###
     ny = upper_year - lower_year + 1 
     LOWESS5y_yearly_GMST = yearly_GMST["Lowess(5)"][-ny:].to_numpy() ## select correct timeperiod
@@ -123,13 +139,6 @@ def decompose_one_gridpoint(Y_, X_, penalty,
     returns: optimal_lambda, MSE, R2, t2m_thermodynamic_std, t2m_thermodynamic, t2m_dynamic_std, t2m_dynamic
     
     """
-    from custom_enet import CustomENet, CustomENetCV
-    from scipy.optimize import minimize_scalar
-    from sklearn.linear_model import ElasticNetCV
-    from sklearn.preprocessing import StandardScaler
-    from statsmodels.api import OLS, add_constant
-    from sklearn.metrics import mean_squared_error, r2_score
-    from sklearn.model_selection import RepeatedKFold
     
     #set cross validation and lambda (alphas) values 
     if cross_validate == True:
