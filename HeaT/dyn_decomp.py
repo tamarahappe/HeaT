@@ -48,11 +48,13 @@ def preprocess_data(lon, lat,
 
     ###GMST###
     ny = upper_year - lower_year + 1 
+    summerdays = int(t2m_cut.shape[0]/ny)
+
     LOWESS5y_yearly_GMST = yearly_GMST["Lowess(5)"][-ny:].to_numpy() ## select correct timeperiod
-    GMST_reshaped = np.empty(92*ny,) #empty array with shape of number of days (e.g 92 per summer, per year)
+    GMST_reshaped = np.empty(summerdays*ny,) #empty array with shape of number of days (e.g 92 per summer, per year)
     for i, GMST in enumerate(LOWESS5y_yearly_GMST): ## loop over the GMST data to fill the array
-        year_array = np.array(92 * [GMST], dtype=float)
-        GMST_reshaped[i*92:(i+1)*92] = year_array[:]
+        year_array = np.array(summerdays * [GMST], dtype=float)
+        GMST_reshaped[i*summerdays:(i+1)*summerdays] = year_array[:]
     #create xarray 
     GMST_xr = xr.DataArray(
         data=GMST_reshaped,
@@ -115,7 +117,7 @@ def preprocess_data(lon, lat,
                 feature=labels_concated))
     X_ = X_concated.values.astype("float32")
     
-    Y_ = t2m_y.values.reshape(7636, 1).astype("float64")
+    Y_ = t2m_y.values.reshape(t2m_y.shape[0], 1).astype("float64")
     
     penalty = np.ones(X_.shape[1]) 
     penalty[np.where(labels_concated=='GMST')] = 0 

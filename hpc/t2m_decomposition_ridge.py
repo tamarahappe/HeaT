@@ -23,26 +23,28 @@ if __name__ == "__main__":
     print(f"Lentis grid= {LENTIS_GRID}")
 
     if not LENTIS_GRID:
-        T2M_file = "1940-2023_T2M_westEU_JJA.nc"
+        T2M_file = "1940-2023_T2M_westEU_JJAS.nc"
         t2m = xr.open_dataset(f"{data_path}{T2M_file}")["t2m"] - 273.15
         latitudes = t2m.latitude
         longitudes = t2m.longitude
 
     elif LENTIS_GRID: 
-        T2M_file = "1940-2023_T2M_westEU_JJA_LENTISGRID.nc" #what happens if I try for a smaller t2m resolution? 
+        #T2M_file = "1940-2023_T2M_westEU_JJAS_LENTISGRID.nc" #
+        T2M_file = "1940-2023_T2M_westEU_June23-JA-Sept7_LENTISGRID.nc"
         t2m = xr.open_dataset(f"{data_path}{T2M_file}")["t2m"] - 273.15
         latitudes = t2m.lat
         longitudes = t2m.lon
 
 
-    STREAM500_file = "STREAM500_era5_ExtendedWestEU_0.25degr_1940_2022_JJA.nc"
+    #STREAM500_file = "STREAM500_era5_ExtendedWestEU_0.25degr_1940_2023_JJAS.nc"
+    STREAM500_file =  "STREAM500_era5_ExtendedWestEU_0.25degr_1940_2023_June23-JA-Sept7.nc"
     stream500 = xr.open_dataset(f"{data_path}{STREAM500_file}")["stream"]
 
     yearly_GMST = pd.read_csv(f"{data_path}NASA_GMST.csv", delimiter=";", skiprows=1, index_col=0)
 
     ## SET GLOBAL VARIABLES
     lower_year=1940 
-    upper_year=2022
+    upper_year=2023
     window=20
 
     cross_validate=False
@@ -61,7 +63,9 @@ if __name__ == "__main__":
 
 
     #EMPTY ARRAYS IN THE SAME SHAPE AS T2M? 
-    ntime= (upper_year - lower_year + 1) * 92 
+    ny = (upper_year - lower_year + 1)
+    ntime= ny * int(t2m.shape[0]/ny) #
+    print(ny, t2m.shape[0]/ny, ntime, t2m.shape)
 
     optimal_lambda_values = np.zeros((t2m.shape[1],t2m.shape[2]))
     MSE_values = np.zeros((t2m.shape[1],t2m.shape[2]))
@@ -97,7 +101,8 @@ if __name__ == "__main__":
     t2m_sliced = t2m.sel(time=t2m.time.dt.year>= lower_year)
     t2m_sliced = t2m_sliced.sel(time=t2m_sliced.time.dt.year<= upper_year)
 
-    filename = f'T2M_westEU_LENTIS={LENTIS_GRID}_decomposed_{lower_year}-{upper_year}_window={window}_CV={cross_validate}_alpha={alpha}.nc'
+    #filename = f'T2M_westEU_JJAS_LENTIS={LENTIS_GRID}_decomposed_{lower_year}-{upper_year}_window={window}_CV={cross_validate}_alpha={alpha}.nc'
+    filename = f'T2M_westEU_June23-JA-Sept7_LENTIS={LENTIS_GRID}_decomposed_{lower_year}-{upper_year}_window={window}_CV={cross_validate}_alpha={alpha}.nc'
 
     
     ## data coordinates are (time, latitude, longitude) for the variables: lambda, MSE, R2, T2M_thermo, etc... 
