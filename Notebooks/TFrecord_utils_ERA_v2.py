@@ -30,7 +30,7 @@ def loading_heatwave_data(filename:str, years_n:int):
 	#retrieve heaywave event information
 	years_i, day0_i, dates_i = [], [], []
 	for i in range(len(years)):
-		if day0[i] == " " or years[i] == "2022": #discard noise 
+		if day0[i] == " ": # or years[i] == "2022": #discard noise 
 			continue
 		years_i.append(float(years[i]))
 		day0_i.append(float(day0[i]))
@@ -69,7 +69,7 @@ def preprocessing_v3(variables, path, years_n,
     curdir = os.getcwd()
     os.chdir(path)
     print(curdir, os.getcwd())
-
+    print(startyear, endyear)
     ######
     for var in variables:
         print(f"variable is {var}")
@@ -127,7 +127,7 @@ def preprocessing_v3(variables, path, years_n,
     os.chdir(curdir)
     return outs
 
-def data_to_events_v2(data_list:list, variables:list, event_len:int, years_i:list, day0_i:list):
+def data_to_events_v2(data_list:list, variables:list, event_len:int, years_i:list, day0_i:list, startyear:int, endyear:int):
 
     #PURPOSE: to create numpy array with [events, feature1, feature2, feature3]
     #INPUTS
@@ -149,13 +149,15 @@ def data_to_events_v2(data_list:list, variables:list, event_len:int, years_i:lis
     print("psl_data.shape is", psl_data.shape)
     events = []
     
-    years_count = np.unique(years_i) #how many years do I have in my dataset?
-    assert int(stream_data.shape[0]/122) == len(years_count), "length of data is not equal to amount of years"
+    years_unique = np.unique(years_i) #all the unique years in my dataset 
+    years_count = endyear-startyear + 1 #number of years 
+        
+    assert int(stream_data.shape[0]/122) == years_count, "length of data is not equal to amount of years"
     
     prev_event = []    
     for i, year in enumerate(years_i):
         #select the correct data from the variables
-        j = np.where(years_count == year)[0][0]
+        j = np.where(years_unique == year)[0][0]
         index_day = int(j * 122 + 30 - event_len + day0_i[i]) #year_intm june july date and event length
         cur_event = [year, day0_i[i]] 
         if prev_event == cur_event:
@@ -202,13 +204,14 @@ def serialize_example(event,date):
 	example_proto = tf.train.Example(features=tf.train.Features(feature=feature))
 	return example_proto.SerializeToString()
 
-def data_to_TFrecord_v2(heatwave_file:str, path_heatwaves:str, data_path:str, variables:list, path_climate:str, 
+def data_to_TFrecord_v2(t2m:str, heatwave_file:str, path_heatwaves:str, data_path:str, variables:list, path_climate:str, 
                      nyears:int, event_len:int=7, method:str="standardization_cut",
                      startyear:int=2022, endyear:int=2023,):
     '''PURPOSE: to read in data from heatwaves and climate data, preform preprocessing steps, and write a
     TF record file
 
     INPUTS:
+    t2m:str = Name of T2M type 
     path_heatwaves:str = path where heatwave data is stored
     variables:list of strings = variable names of climate data
     path_climate: string = of the path name where the climate data is stored
@@ -225,7 +228,7 @@ def data_to_TFrecord_v2(heatwave_file:str, path_heatwaves:str, data_path:str, va
     list_of_data = preprocessing_v3(variables, path_climate, nyears, method=method,
                                    startyear=startyear, endyear=endyear) 
     #CREATE HEATWAVE EVENTS
-    events = data_to_events_v2(list_of_data, variables, event_len, years_i, day0_i)
+    events = data_to_events_v2(list_of_data, variables, event_len, years_i, day0_i, startyear, endyear)
 
     #events in verschillenjde tf records, 200mb voor 1 shard, 
 
@@ -233,14 +236,14 @@ def data_to_TFrecord_v2(heatwave_file:str, path_heatwaves:str, data_path:str, va
     current_shard = 0
     img_in_current_shard = 0
     SAMPLES_PER_SHARD = len(events) #later zien of dit niet te groot is
-    writer = tf.io.TFRecordWriter(f"{data_path}/tf_records/TF_record_ERA5_{startyear}-{endyear}_{method}_TEST.tfrecord")
+    writer = tf.io.TFRecordWriter(f"{data_path}/tf_records/TF_record_ERA5_{t2m}_{startyear}-{endyear}_{method}.tfrecord")
     for i, event in enumerate(events):
         if img_in_current_shard == SAMPLES_PER_SHARD:
             writer.close()
             #open new file
             current_shard += 1
             img_in_current_shard = 0
-            writer = tf.io.TFRecordWriter(f"{data_path}/tf_records/TF_record_ERA5_{startyear}-{endyear}_{method}_TEST.tfrecord")
+            writer = tf.io.TFRecordWriter(f"{data_path}/tf_records/TF_record_ERA5_{t2m}_{startyear}-{endyear}_{method}.tfrecord")
         #process current sample and write to file
         tf_example = serialize_example(event, dates_i[i])
         #print(tf_example)
