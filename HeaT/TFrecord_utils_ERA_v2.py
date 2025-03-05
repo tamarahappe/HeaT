@@ -81,8 +81,11 @@ def preprocessing_v3(variables, path, years_n,
             var_cut = var_cut.sel(time=var_cut.time.dt.year<=endyear)
             var_array = var_cut["stream"].values
             
-            var_mean = Dataset(fr"ML_prep_MSLP_STREAM/STREAM250_NAExt_1940-2011_TRAIN_15drunMEAN.nc")['stream'][:]
-            var_std = Dataset(fr'ML_prep_MSLP_STREAM/STREAM250_NAExt_1940-2011_TRAIN_15drunSTD.nc')['stream'][:]
+            #var_mean = Dataset(fr"ML_prep_MSLP_STREAM/STREAM250_NAExt_1940-2011_TRAIN_15drunMEAN.nc")['stream'][:]
+            #var_std = Dataset(fr'ML_prep_MSLP_STREAM/STREAM250_NAExt_1940-2011_TRAIN_15drunSTD.nc')['stream'][:]
+            var_mean = Dataset(fr"STREAM250_era5_NAExt_0.25degr_1940-2023_JJAS_like_LENTIS_15dMEAN.nc")['stream'][:]
+            var_std = Dataset(fr'STREAM250_era5_NAExt_0.25degr_1940-2023_JJAS_like_LENTIS_15dSTD.nc')['stream'][:]
+            
         elif var == 'mslp':
             var = xr.open_dataset(f"MSLP_era5_NAExt_0.25degr_1940-2023_JJAS_like_LENTIS.nc")
             var_lons = var.lon
@@ -91,8 +94,12 @@ def preprocessing_v3(variables, path, years_n,
             var_cut = var_cut.sel(time=var_cut.time.dt.year<=endyear)
             var_array = var_cut["msl"].values
             
-            var_mean = Dataset(fr'ML_prep_MSLP_STREAM/MSLP_NAExt_1940-2011_TRAIN_15drunMEAN.nc')["msl"][:]
-            var_std = Dataset(fr'ML_prep_MSLP_STREAM/MSLP_NAExt_1940-2011_TRAIN_15drunSTD.nc')["msl"][:]
+#             var_mean = Dataset(fr'ML_prep_MSLP_STREAM/MSLP_NAExt_1940-2011_TRAIN_15drunMEAN.nc')["msl"][:]
+#             var_std = Dataset(fr'ML_prep_MSLP_STREAM/MSLP_NAExt_1940-2011_TRAIN_15drunSTD.nc')["msl"][:]            
+            var_mean = Dataset(fr'MSLP_era5_NAExt_0.25degr_1940-2023_JJAS_like_LENTIS_15dMEAN.nc')["msl"][:]
+            var_std = Dataset(fr'MSLP_era5_NAExt_0.25degr_1940-2023_JJAS_like_LENTIS_15dSTD.nc')["msl"][:]
+            
+            
         #now standardization
         var_out= np.empty_like(var_array)		
         if method == 'standardization_cut':
