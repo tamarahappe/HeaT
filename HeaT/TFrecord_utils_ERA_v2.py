@@ -134,7 +134,7 @@ def preprocessing_v3(variables, path, years_n,
     os.chdir(curdir)
     return outs
 
-def data_to_events_v2(data_list:list, variables:list, event_len:int, years_i:list, day0_i:list, startyear:int, endyear:int):
+def data_to_events_v2(data_list:list, variables:list, event_len:int, years_i:list, dates_i:list, day0_i:list, startyear:int, endyear:int):
 
     #PURPOSE: to create numpy array with [events, feature1, feature2, feature3]
     #INPUTS
@@ -143,10 +143,12 @@ def data_to_events_v2(data_list:list, variables:list, event_len:int, years_i:lis
     #event_len = number of days before and after day 0
     #ensemble_i = heatwave_list with ensemble member index
     #years_i = heatwave_list with years
+    #dates_i = heatwave_list with dates
     #day0_i = heatwave_list with starting day
     #years_ind = heatwave_list with index of ensemble_year
     #OUTPUT
     #events = list with for each event the three variable arrays
+    #dates_updated = dates_i filtered for the duplicates
     
 
     print("Variable order is ", variables[:])
@@ -162,13 +164,15 @@ def data_to_events_v2(data_list:list, variables:list, event_len:int, years_i:lis
     assert int(stream_data.shape[0]/122) == years_count, "length of data is not equal to amount of years"
     
     prev_event = []    
+    duplicate_count = 0
+    dates_updated = []
     for i, year in enumerate(years_i):
         #select the correct data from the variables
         j = np.where(years_unique == year)[0][0]
         index_day = int(j * 122 + 30 - event_len + day0_i[i]) #year_intm june july date and event length
         cur_event = [year, day0_i[i]] 
         if prev_event == cur_event:
-            #print("duplicates")
+            duplicate_count = duplicate_count + 1 
             #print(prev_event, cur_event)
             continue
         else:
@@ -179,7 +183,9 @@ def data_to_events_v2(data_list:list, variables:list, event_len:int, years_i:lis
             f2 = psl_data[index_day:end,:,:] 
             event = np.array([f1,f2])
             events.append(np.transpose(event)) #transpose such that shape becomes spatial, temporal, features
-    return events
+            dates_updated.append(dates_i[i])
+    print("duplicate count =", duplicate_count)
+    return events, dates_updated
 
 
 def _bytes_feature(value):
@@ -235,8 +241,8 @@ def data_to_TFrecord_v2(t2m:str, heatwave_file:str, path_heatwaves:str, data_pat
     list_of_data = preprocessing_v3(variables, path_climate, nyears, method=method,
                                    startyear=startyear, endyear=endyear) 
     #CREATE HEATWAVE EVENTS
-    events = data_to_events_v2(list_of_data, variables, event_len, years_i, day0_i, startyear, endyear)
-
+    events, dates_i = data_to_events_v2(list_of_data, variables, event_len, years_i, dates_i, day0_i, startyear, endyear)
+    
     #events in verschillenjde tf records, 200mb voor 1 shard, 
 
     #PROCESS EVENTS INTO TF RECORD FILES
