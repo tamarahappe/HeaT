@@ -16,13 +16,14 @@ import warnings
 import sys
 
 
-# HOME = "/home/thappe"
-HOME = "/scistor/ivm/the410/"
+HOME = "/home/thappe"
+# HOME = "/scistor/ivm/the410/"
 
 sys.path.append(os.path.expanduser(f'{HOME}/HeaT'))
 from HeaT.TFrecord_utils_ERA_v2 import *
    
-sys.path.append(os.path.expanduser(f"{HOME}/VAE3D/autoencoder_notebooks/LatentSpace/P1/"))
+sys.path.append(os.path.expanduser(f"{HOME}/VAE3D/autoencoder_notebooks/LatentSpace/"))
+#sys.path.append(os.path.expanduser(f"{HOME}/VAE3D/autoencoder_notebooks/LatentSpace/P1/"))
 from model.autoencoder_3d_model_v1 import CVAE
 
 
@@ -219,6 +220,37 @@ def get_r2_reconstructed_ERA5(model_file, L,  data_parsed):
         r2_totals.append(r2)
 
     return r2_totals
+
+
+def get_MSE_reconstructed_ERA5(model_file, L,  data_parsed):
+    from sklearn.metrics import mean_squared_error
+    
+    regularizer = tf.keras.regularizers.L2(0.2)
+    model = CVAE(L, filter_scaling=4)
+    model.built = True
+    model.load_weights(f"{model_file}")
+        
+    warnings.filterwarnings("ignore")
+
+    
+    test_sample = np.zeros((1, 192, 64, 5, 2))
+    
+    mse_totals = []
+    
+    for element in data_parsed.as_numpy_iterator():
+        test_sample[0] = element[0]
+        test_sample_transposed = np.transpose(element[0], (1, 0, 2, 3))    
+        
+        mean, logvar = model.encode(test_sample)
+        z = model.reparameterize(mean, logvar)
+        predicted = model.decode(z, apply_sigmoid=False)
+        predicted = predicted[0,:,:,:,:]
+        predicted_transposed = np.transpose(predicted, (1, 0, 2, 3))
+        
+        mse = mean_squared_error(test_sample_transposed.flatten(), predicted_transposed.flatten())
+        mse_totals.append(mse)
+
+    return mse_totals
 
 def get_heatwave_means(model_file, L, data_parsed):
     
