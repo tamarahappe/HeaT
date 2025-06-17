@@ -27,7 +27,7 @@ from HeaT.TFrecord_utils_ERA_v2 import *
 
 class Clustering:
     def __init__(self, t2m_name, VAE_model, data_path, 
-                 cluster_model_name="GMM", cluster_type="fit"):
+                 cluster_model_name="GMM", cluster_type="fit", cluster_k=4):
         
         assert t2m_name in ["t2m", "t2m_dynamic", "t2m_minus_thermo"], "data not available for this var"
         self.t2m_name = t2m_name
@@ -36,6 +36,7 @@ class Clustering:
         self.data_path = data_path
         self.cluster_model_name = cluster_model_name
         self.cluster_type = cluster_type
+        self.cluster_k = cluster_k #default is 4, nr of clusters
         
         self.heatwave_means = None
         self.heatwave_dates = None
@@ -49,8 +50,9 @@ class Clustering:
         #load in encoded heatwave data
         self.load_encoded_heatwaves()
         
-        #load cluster model 
+        #load cluster model and do clustering
         self.load_cluster_model()
+        self.clustering()
         
         #load tf_records data
         self.load_tf_records()
@@ -96,8 +98,17 @@ class Clustering:
         """clustering era5data from heatwave means with model as loaded, depending on the way of fitting"""
 
         assert self.cluster_type in ["fit", "transfer", "project"], "type of clustering not recognized"
+     
         
         if self.cluster_type == "fit":
+            
+            if self.cluster_k != 4:
+                print(f"changing nr of k for clustering to {self.cluster_k}")
+                if self.cluster_model_name == "GMM":
+                    self.cluster_model.n_components = self.cluster_k
+                elif self.cluster_model_name == "Kmeanseucl":
+                    self.cluster_model.n_clusters = self.cluster_k
+ 
             self.y_pred = self.cluster_model.fit_predict(self.heatwave_means)
         
         elif self.cluster_type == "transfer": #concat datasets and then fit 
@@ -117,9 +128,6 @@ class Clustering:
         
     def plot_over_time(self, savefig=False, outpathfigure=""):
         "clustering over time, with plot"
-        # check if already clustered
-        if type(self.y_pred) != np.ndarray:
-            self.clustering()
         
         ### counting the amount of heatwaves per cluster, per year 
         years = np.arange(1940, 2024, 1)
