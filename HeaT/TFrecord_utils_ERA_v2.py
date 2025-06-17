@@ -64,7 +64,7 @@ def preprocessing_v3(variables, path, years_n,
     if type(variables) != list:
         raise ValueError("variables is not in list format")
         
-    assert method in ['standardization_cut', 'stand_norm_nans', 'stand_norm_01s'], "normalization method not available"
+    assert method in ['standardization_cut', 'stand_norm_nans', 'stand_norm_01s', "RAW"], "normalization method not available"
 
     curdir = os.getcwd()
     os.chdir(path)
@@ -120,6 +120,10 @@ def preprocessing_v3(variables, path, years_n,
                 var_year = np.where(var_year > 1, np.NAN, var_year)
                 var_out[year*122:(year+1)*122,:,:]=var_year
             outs.append(var_out)
+            
+        elif method == "RAW":
+            print("method is RAW, no standardization applied")
+            outs.append(var_array)
 
         elif method == 'stand_norm_01s':
             print("stand + norma +nans method: out=(standardized_value - -4)/(4 - -4)")
