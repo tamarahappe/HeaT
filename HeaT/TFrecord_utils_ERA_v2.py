@@ -64,7 +64,8 @@ def preprocessing_v3(variables, path, years_n,
     if type(variables) != list:
         raise ValueError("variables is not in list format")
         
-    assert method in ['standardization_cut', 'stand_norm_nans', 'stand_norm_01s', "RAW"], "normalization method not available"
+    assert method in ['standardization_cut', 'stand_norm_nans', 'stand_norm_01s',
+                      "RAW", "ann_var_removed"], "normalization method not available"
 
     curdir = os.getcwd()
     os.chdir(path)
@@ -78,8 +79,8 @@ def preprocessing_v3(variables, path, years_n,
             var_lons = var.lon
             var_lats = var.lat
             var_cut = var.sel(time=var.time.dt.year>=startyear)
-            var_cut = var_cut.sel(time=var_cut.time.dt.year<=endyear)
-            var_array = var_cut["stream"].values
+            var_cut = var_cut.sel(time=var_cut.time.dt.year<=endyear)["stream"]
+            var_array = var_cut.values
             
             #var_mean = Dataset(fr"ML_prep_MSLP_STREAM/STREAM250_NAExt_1940-2011_TRAIN_15drunMEAN.nc")['stream'][:]
             #var_std = Dataset(fr'ML_prep_MSLP_STREAM/STREAM250_NAExt_1940-2011_TRAIN_15drunSTD.nc')['stream'][:]
@@ -91,8 +92,8 @@ def preprocessing_v3(variables, path, years_n,
             var_lons = var.lon
             var_lats = var.lat
             var_cut = var.sel(time=var.time.dt.year>=startyear)
-            var_cut = var_cut.sel(time=var_cut.time.dt.year<=endyear)
-            var_array = var_cut["msl"].values
+            var_cut = var_cut.sel(time=var_cut.time.dt.year<=endyear)["msl"]
+            var_array = var_cut.values
             
 #             var_mean = Dataset(fr'ML_prep_MSLP_STREAM/MSLP_NAExt_1940-2011_TRAIN_15drunMEAN.nc')["msl"][:]
 #             var_std = Dataset(fr'ML_prep_MSLP_STREAM/MSLP_NAExt_1940-2011_TRAIN_15drunSTD.nc')["msl"][:]            
@@ -124,6 +125,13 @@ def preprocessing_v3(variables, path, years_n,
         elif method == "RAW":
             print("method is RAW, no standardization applied")
             outs.append(var_array)
+            
+        elif method == "ann_var_removed":
+            print("No standardization applied, but interannual variability is removed (fieldmean)")
+            mean_field = var_cut.mean(dim=["lat", "lon"]) #take fieldmean over lat and lon
+#             print(var_cut.shape, mean_field.shape)
+            var_out = var_cut - mean_field
+            outs.append(var_out.values)
 
         elif method == 'stand_norm_01s':
             print("stand + norma +nans method: out=(standardized_value - -4)/(4 - -4)")
