@@ -73,7 +73,7 @@ class Clustering:
         heatwave_means = pd.read_csv(f'{self.data_path}/ERA5_{self.t2m_name}_encoded_heatwaves_L{self.VAE_model[0]}.csv', 
                              skiprows=1, header=None)
         heatwave_dates = pd.read_csv(f'{self.data_path}/ERA5_{self.t2m_name}_heatwaves_dates.csv',
-                                     skiprows=1, header=None)
+                                     skiprows=0, header=None)
         
         #convert into dates from datetime 
         heatwave_dates[0] = pd.to_datetime(heatwave_dates[0]).dt.date
@@ -125,9 +125,18 @@ class Clustering:
                 print(f"changing nr of k for clustering to {self.cluster_k}")
                 if self.cluster_model_name == "GMM":
                     self.cluster_model.n_components = self.cluster_k
+                    
+
+                    
                 elif self.cluster_model_name == "Kmeanseucl":
                     self.cluster_model.n_clusters = self.cluster_k
  
+            if self.cluster_model_name == "GMM":
+                #try regulizer
+                self.cluster_model.reg_covar = 1e-4
+#                 print("tied")
+#                 self.covariance_type = "tied" #try to get softer boundaries
+                
             self.y_pred = self.cluster_model.fit_predict(self.heatwave_means)
         
         elif self.cluster_type == "transfer": #concat datasets and then fit 
@@ -154,20 +163,42 @@ class Clustering:
             self.y_pred_proba = self.cluster_model.predict_proba(self.heatwave_means) 
         
         
-    def plot_over_time(self, savefig=False, outpathfigure=""):
+    def plot_over_time(self, savefig=False, outpathfigure="", GMM_proba=None):
         "clustering over time, with plot"
         
         ### counting the amount of heatwaves per cluster, per year 
         years = np.arange(1940, 2024, 1)
         year_counts_for_plotting_reversed  = {}
 
-        for cluster_id in [1,2,3,4]:
+        for cluster_id in [1,2,3,4]: #np.arange(1, k+1, 1) ? 
             year_counts_for_plotting_reversed[cluster_id] = np.zeros_like(years)
-
+        
         for date, cluster in zip(self.heatwave_dates, self.y_pred):
             cluster_id = cluster+1
             year_index = np.where(years==date.year)
             year_counts_for_plotting_reversed[cluster_id][year_index] += 1 #add one to this year and cluster count
+            
+        if self.cluster_model_name == "GMM":
+            print("Model is GMM")
+            if GMM_proba == None:
+                print("No threshold set, all heatwaves are counted")
+            else:
+                print(f"Threshold is set to {GMM_proba}")
+                
+                #reset the counts per year to 0
+                for cluster_id in [1,2,3,4]: #np.arange(1, k+1, 1) ? 
+                    year_counts_for_plotting_reversed[cluster_id] = np.zeros_like(years)
+                
+                for cluster_id in np.arange(self.cluster_k):
+                    indices = np.argwhere(self.y_pred_proba[:,cluster_id]>=GMM_proba)[:,0]
+                    print(cluster_id, indices.shape)
+
+                    cluster_id = cluster_id+1
+                    #get the dates
+                    dates = self.heatwave_dates[indices]
+                    for date in dates:
+                        year_index = np.where(years==date.year)
+                        year_counts_for_plotting_reversed[cluster_id][year_index] += 1 #add one to this year and cluster count
         
         #### plotting 
         fig, axes = plt.subplots(2,2, figsize=(10,10), layout='constrained')
