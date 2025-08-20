@@ -106,6 +106,8 @@ def plot_sample(x, norm_method, title):
     vmin, vmax = -3, 3
   elif norm_method == "standardization_cut":
     vmin, vmax = -1, 1
+  elif norm_method == "difference":
+    vmin, vmax = -0.5, 0.5
   else:
     vmin, vmax = 0, 1
 
@@ -152,7 +154,7 @@ def plot_sample(x, norm_method, title):
   ax_cbar = fig.add_axes([0.96, 0.165, 0.01, 0.675])
   fig.colorbar(cs, cax=ax_cbar)
 
-  plt.title(title)
+  plt.suptitle(title, fontsize=50)
 
   plt.show()
   plt.close()
