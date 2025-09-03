@@ -106,6 +106,8 @@ def plot_sample(x, norm_method, title):
     vmin, vmax = -3, 3
   elif norm_method == "standardization_cut":
     vmin, vmax = -1, 1
+  elif norm_method == "standardization_cut_1.5":
+    vmin, vmax = -1.5, 1.5
   elif norm_method == "difference":
     vmin, vmax = -0.5, 0.5
   else:

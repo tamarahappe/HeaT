@@ -528,8 +528,10 @@ class Clustering:
         central_heatwave_index = {}
         for i, center in enumerate(centers):
             similarity = cosine_similarity(center.reshape(1, -1), self.heatwave_means)[0] #calculate cosine similarity
-            closest_heatwave_i = sorted(range(len(similarity)), key=lambda k: similarity[k])[:n_closest] #get n closest 
+            closest_heatwave_i = sorted(range(len(similarity)), key=lambda k: similarity[k])[-n_closest:] #get n closest 
             central_heatwave_index[i+1]=closest_heatwave_i
+            
+        self.central_heatwaves_indices = central_heatwave_index
         
         """here I should define which tf_record data I want to plot, now I only do std, but I also want to be 
         able to plot raw values, and both together"""
