@@ -269,7 +269,7 @@ class Clustering:
                 model = sm.OLS(counts_, years_with_constant).fit()
                 Y = model.predict(sm.add_constant(years_.reshape(-1, 1)))
 
-                ax.plot(years_, Y, label=f"Lin. Regr. {startyear}-2024 \n coef={round(model.params[1], 4)} \n pval={round(model.pvalues[1], 3)}") #, c="red")
+                ax.plot(years_, Y, label=f"Lin. Regr. {startyear}-2023 \n coef={round(model.params[1], 4)} \n pval={round(model.pvalues[1], 3)}") #, c="red")
 
             # # Add some text for labels, title and custom x-axis tick labels, etc.
             ax.set_ylabel('nr of heatwaves')
@@ -332,7 +332,7 @@ class Clustering:
         plt.show()
         
 
-    def plot_heatwave_sample(self, x, title, diff_plot=False):
+    def plot_heatwave_sample(self, x, title, diff_plot=False, cmap_stream="seismic"):
         """Plots one sample (either input or predicted) """
         
         import warnings
@@ -381,7 +381,7 @@ class Clustering:
             #plot stream function
             ax = plt.subplot(2, 5, t + 1, projection=ccrs.PlateCarree())
             cs_s = ax.pcolormesh(LONS, LATS, stream, transform=ccrs.PlateCarree(),
-                               cmap="seismic", vmin=vmin_s, vmax=vmax_s)
+                               cmap=cmap_stream, vmin=vmin_s, vmax=vmax_s)
             ax.coastlines()
             ax.set_title("Day {}".format(t+1))
             gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
@@ -513,7 +513,7 @@ class Clustering:
         plt.show()
         plt.close()    
         
-    def plot_central_heatwaves(self, n_closest=1, savefig=False):
+    def plot_central_heatwaves(self, n_closest=1, savefig=False, cmap_stream="seismic"):
         """plot central heatwaves of clusters"""
 #         assert to_plot in ["std", "raw", "raw_std"], "data not available"
         
@@ -554,7 +554,7 @@ class Clustering:
         #actual plotting...
         for clusterid, heatwave_mean in central_heatwave_data.items():
             self.plot_heatwave_sample(heatwave_mean, 
-                             f"Central Heatwave cluster ID {clusterid} \n {self.cluster_model_name} - {self.cluster_type} - n_closest={n_closest}")
+                             f"Central Heatwave cluster ID {clusterid} \n {self.cluster_model_name} - {self.cluster_type} - n_closest={n_closest}", cmap_stream=cmap_stream)
     
     def plot_central_heatwaves_temperature(self, n_closest=1, savefig=False):
         """plot central heatwaves of clusters"""

@@ -30,6 +30,206 @@ from HeaT.reconstruction import plot_sample
 from HeaT.TFrecord_utils_ERA_v2 import load_tfrecords_ERA5, parse_function_full_era5
 
 
+#from scipy stats
+def false_discovery_control(ps, *, axis=0, method='bh'):
+    """Adjust p-values to control the false discovery rate.
+
+    The false discovery rate (FDR) is the expected proportion of rejected null
+    hypotheses that are actually true.
+    If the null hypothesis is rejected when the *adjusted* p-value falls below
+    a specified level, the false discovery rate is controlled at that level.
+
+    Parameters
+    ----------
+    ps : 1D array_like
+        The p-values to adjust. Elements must be real numbers between 0 and 1.
+    axis : int
+        The axis along which to perform the adjustment. The adjustment is
+        performed independently along each axis-slice. If `axis` is None, `ps`
+        is raveled before performing the adjustment.
+    method : {'bh', 'by'}
+        The false discovery rate control procedure to apply: ``'bh'`` is for
+        Benjamini-Hochberg [1]_ (Eq. 1), ``'by'`` is for Benjaminini-Yekutieli
+        [2]_ (Theorem 1.3). The latter is more conservative, but it is
+        guaranteed to control the FDR even when the p-values are not from
+        independent tests.
+
+    Returns
+    -------
+    ps_adusted : array_like
+        The adjusted p-values. If the null hypothesis is rejected where these
+        fall below a specified level, the false discovery rate is controlled
+        at that level.
+
+    See Also
+    --------
+    combine_pvalues
+    statsmodels.stats.multitest.multipletests
+
+    Notes
+    -----
+    In multiple hypothesis testing, false discovery control procedures tend to
+    offer higher power than familywise error rate control procedures (e.g.
+    Bonferroni correction [1]_).
+
+    If the p-values correspond with independent tests (or tests with
+    "positive regression dependencies" [2]_), rejecting null hypotheses
+    corresponding with Benjamini-Hochberg-adjusted p-values below :math:`q`
+    controls the false discovery rate at a level less than or equal to
+    :math:`q m_0 / m`, where :math:`m_0` is the number of true null hypotheses
+    and :math:`m` is the total number of null hypotheses tested. The same is
+    true even for dependent tests when the p-values are adjusted accorded to
+    the more conservative Benjaminini-Yekutieli procedure.
+
+    The adjusted p-values produced by this function are comparable to those
+    produced by the R function ``p.adjust`` and the statsmodels function
+    `statsmodels.stats.multitest.multipletests`. Please consider the latter
+    for more advanced methods of multiple comparison correction.
+
+    References
+    ----------
+    .. [1] Benjamini, Yoav, and Yosef Hochberg. "Controlling the false
+           discovery rate: a practical and powerful approach to multiple
+           testing." Journal of the Royal statistical society: series B
+           (Methodological) 57.1 (1995): 289-300.
+
+    .. [2] Benjamini, Yoav, and Daniel Yekutieli. "The control of the false
+           discovery rate in multiple testing under dependency." Annals of
+           statistics (2001): 1165-1188.
+
+    .. [3] TileStats. FDR - Benjamini-Hochberg explained - Youtube.
+           https://www.youtube.com/watch?v=rZKa4tW2NKs.
+
+    .. [4] Neuhaus, Karl-Ludwig, et al. "Improved thrombolysis in acute
+           myocardial infarction with front-loaded administration of alteplase:
+           results of the rt-PA-APSAC patency study (TAPS)." Journal of the
+           American College of Cardiology 19.5 (1992): 885-891.
+
+    Examples
+    --------
+    We follow the example from [1]_.
+
+        Thrombolysis with recombinant tissue-type plasminogen activator (rt-PA)
+        and anisoylated plasminogen streptokinase activator (APSAC) in
+        myocardial infarction has been proved to reduce mortality. [4]_
+        investigated the effects of a new front-loaded administration of rt-PA
+        versus those obtained with a standard regimen of APSAC, in a randomized
+        multicentre trial in 421 patients with acute myocardial infarction.
+
+    There were four families of hypotheses tested in the study, the last of
+    which was "cardiac and other events after the start of thrombolitic
+    treatment". FDR control may be desired in this family of hypotheses
+    because it would not be appropriate to conclude that the front-loaded
+    treatment is better if it is merely equivalent to the previous treatment.
+
+    The p-values corresponding with the 15 hypotheses in this family were
+
+    >>> ps = [0.0001, 0.0004, 0.0019, 0.0095, 0.0201, 0.0278, 0.0298, 0.0344,
+    ...       0.0459, 0.3240, 0.4262, 0.5719, 0.6528, 0.7590, 1.000]
+
+    If the chosen significance level is 0.05, we may be tempted to reject the
+    null hypotheses for the tests corresponding with the first nine p-values,
+    as the first nine p-values fall below the chosen significance level.
+    However, this would ignore the problem of "multiplicity": if we fail to
+    correct for the fact that multiple comparisons are being performed, we
+    are more likely to incorrectly reject true null hypotheses.
+
+    One approach to the multiplicity problem is to control the family-wise
+    error rate (FWER), that is, the rate at which the null hypothesis is
+    rejected when it is actually true. A common procedure of this kind is the
+    Bonferroni correction [1]_.  We begin by multiplying the p-values by the
+    number of hypotheses tested.
+
+    >>> import numpy as np
+    >>> np.array(ps) * len(ps)
+    array([1.5000e-03, 6.0000e-03, 2.8500e-02, 1.4250e-01, 3.0150e-01,
+           4.1700e-01, 4.4700e-01, 5.1600e-01, 6.8850e-01, 4.8600e+00,
+           6.3930e+00, 8.5785e+00, 9.7920e+00, 1.1385e+01, 1.5000e+01])
+
+    To control the FWER at 5%, we reject only the hypotheses corresponding
+    with adjusted p-values less than 0.05. In this case, only the hypotheses
+    corresponding with the first three p-values can be rejected. According to
+    [1]_, these three hypotheses concerned "allergic reaction" and "two
+    different aspects of bleeding."
+
+    An alternative approach is to control the false discovery rate: the
+    expected fraction of rejected null hypotheses that are actually true. The
+    advantage of this approach is that it typically affords greater power: an
+    increased rate of rejecting the null hypothesis when it is indeed false. To
+    control the false discovery rate at 5%, we apply the Benjamini-Hochberg
+    p-value adjustment.
+
+    >>> from scipy import stats
+    >>> stats.false_discovery_control(ps)
+    array([0.0015    , 0.003     , 0.0095    , 0.035625  , 0.0603    ,
+           0.06385714, 0.06385714, 0.0645    , 0.0765    , 0.486     ,
+           0.58118182, 0.714875  , 0.75323077, 0.81321429, 1.        ])
+
+    Now, the first *four* adjusted p-values fall below 0.05, so we would reject
+    the null hypotheses corresponding with these *four* p-values. Rejection
+    of the fourth null hypothesis was particularly important to the original
+    study as it led to the conclusion that the new treatment had a
+    "substantially lower in-hospital mortality rate."
+
+    """
+    # Input Validation and Special Cases
+    ps = np.asarray(ps)
+
+    ps_in_range = (np.issubdtype(ps.dtype, np.number)
+                   and np.all(ps == np.clip(ps, 0, 1)))
+    if not ps_in_range:
+        raise ValueError("`ps` must include only numbers between 0 and 1.")
+
+    methods = {'bh', 'by'}
+    if method.lower() not in methods:
+        raise ValueError(f"Unrecognized `method` '{method}'."
+                         f"Method must be one of {methods}.")
+    method = method.lower()
+
+    if axis is None:
+        axis = 0
+        ps = ps.ravel()
+
+    axis = np.asarray(axis)[()]
+    if not np.issubdtype(axis.dtype, np.integer) or axis.size != 1:
+        raise ValueError("`axis` must be an integer or `None`")
+
+    if ps.size <= 1 or ps.shape[axis] <= 1:
+        return ps[()]
+
+    ps = np.moveaxis(ps, axis, -1)
+    m = ps.shape[-1]
+
+    # Main Algorithm
+    # Equivalent to the ideas of [1] and [2], except that this adjusts the
+    # p-values as described in [3]. The results are similar to those produced
+    # by R's p.adjust.
+
+    # "Let [ps] be the ordered observed p-values..."
+    order = np.argsort(ps, axis=-1)
+    ps = np.take_along_axis(ps, order, axis=-1)  # this copies ps
+
+    # Equation 1 of [1] rearranged to reject when p is less than specified q
+    i = np.arange(1, m+1)
+    ps *= m / i
+
+    # Theorem 1.3 of [2]
+    if method == 'by':
+        ps *= np.sum(1 / i)
+
+    # accounts for rejecting all null hypotheses i for i < k, where k is
+    # defined in Eq. 1 of either [1] or [2]. See [3]. Starting with the index j
+    # of the second to last element, we replace element j with element j+1 if
+    # the latter is smaller.
+    np.minimum.accumulate(ps[..., ::-1], out=ps[..., ::-1], axis=-1)
+
+    # Restore original order of axes and data
+    np.put_along_axis(ps, order, values=ps.copy(), axis=-1)
+    ps = np.moveaxis(ps, -1, axis)
+
+    return np.clip(ps, 0, 1)
+
+
 class LatentSpaceAnalysis:
     def __init__(self, clustered,
                 year_splits=[[1940,1970],[1990,2020]],
@@ -551,7 +751,7 @@ class LatentSpaceAnalysis:
             plt.rcParams["figure.figsize"] = (20, 6)  # width=30 inches, height=6
             plt.show()
             
-    def trend_of_nodes(self, to_plot=True, pvalthresh=0.05):
+    def trend_of_nodes(self, to_plot=True, pvalthresh=0.05, fdc=True):
         import statsmodels.api as sm
 
         heatwave_years = []
@@ -570,7 +770,10 @@ class LatentSpaceAnalysis:
             self.trend_per_node.append(model.params[1])
             self.pvals_per_node.append(model.pvalues[1])
 
-
+        if fdc == True:
+            pvals_adjusted = false_discovery_control(self.pvals_per_node)
+#             print(f"pvalues changed from {self.pvals_per_node} to {pvals_adjusted}")
+            self.pvals_per_node = pvals_adjusted
             
         pvals_per_node_sign = [i for i, p in enumerate(self.pvals_per_node) if p <= pvalthresh]
 
@@ -582,7 +785,7 @@ class LatentSpaceAnalysis:
                     plt.scatter(i, self.trend_per_node[i], c='b')
 
             plt.ylim(-0.01, 0.01)
-            plt.title(f"Lin trend per year per node \n pval={pvalthresh}")
+            plt.title(f"Lin trend per year per node \n pval={pvalthresh} fdc={fdc}")
             plt.rcParams["figure.figsize"] = (20, 6)  # width=30 inches, height=6
             plt.show()
 
@@ -646,7 +849,7 @@ class LatentSpaceAnalysis:
         self.all_heatwave_changes_mean = np.nanmean(np.array(all_heatwave_changes), axis=0)
         
         
-    def trend_of_nodes_split(self, to_plot=False, pvalthresh=0.05):
+    def trend_of_nodes_split(self, to_plot=False, pvalthresh=0.05, fdc=True, encircle_top_nodes=False):
 
         import statsmodels.api as sm
 
@@ -676,28 +879,56 @@ class LatentSpaceAnalysis:
                 trend_per_node.append(model.params[1])
                 pvals_per_node.append(model.pvalues[1])
 
+            if fdc == True:
+                pvals_per_node = false_discovery_control(pvals_per_node)
+    
             pvals_per_node_sign = [i for i, p in enumerate(pvals_per_node) if p <= pvalthresh]
-
+             
+            label_plotted=False
+            stat_label=False
             if to_plot:
-                for i, p in enumerate(pvals_per_node):
+                for i, p in enumerate(pvals_per_node):   
+                    
                     if p <= pvalthresh:
-                        plt.scatter(i, trend_per_node[i], c='r')
+                        plt.scatter(i, trend_per_node[i], c="r",
+                                   label="Stat. Sign" if not stat_label else None)
+                        stat_label =True
+                        
                     else:
-                        plt.scatter(i, trend_per_node[i], c='b')
+                         plt.scatter(i, trend_per_node[i], c="b")
+
+                        
+
+                    
+                    if encircle_top_nodes==True:
+                        if i in self.heatwave_difference_top_nodes[k+1]:
+                            plt.scatter(i, trend_per_node[i],
+                                        s=200,                # bigger size
+                                        facecolors='none',    # hollow circle
+                                        edgecolors='green',    # highlight color
+                                        linewidths=2,
+                                        label="Top Nodes" if not label_plotted else None)
+                            label_plotted=True
+    
 
                 plt.ylim(-0.02, 0.02)
-                plt.title(f"Lin trend per year per node for cluster {k+1} \n pval={pvalthresh}")
+                plt.legend()
+                plt.title(f"Lin trend per year per node for cluster {k+1} \n pval={pvalthresh} fdc={fdc}")
                 plt.rcParams["figure.figsize"] = (20, 6)  # width=30 inches, height=6
                 plt.show()
+           
 
             self.trend_per_node_per_cluster[k+1]=trend_per_node
             self.pvals_per_node_per_cluster[k+1] = pvals_per_node
 
-    def changes_by_trends_split(self, increment_years=100, to_plot=False, pvalthresh=0.05):
+    def changes_by_trends_split(self, increment_years=100, to_plot=False, pvalthresh=0.05, TOP_NODES=False):
         
         """
         Depending on the cluster, take the relevant trends and pvals to see which nodes to change
         use increment_years to decide how big the change would be - calculated with the respective trends
+        
+        if TOP_NODES=True, nodes that are changed are the most important ones of the represpective cluster, 
+        instead of the nodes that are stat. sign. changing
         
         per heatwave cluster we save the changed pattern in a dictionary
         """
@@ -725,6 +956,12 @@ class LatentSpaceAnalysis:
             pvals  = self.pvals_per_node_per_cluster[clusterID]
             
             significant_nodes = np.argwhere(np.array(pvals) <= pvalthresh)[:,0]
+            
+            if TOP_NODES==True:
+                print("Top nodes is true, changing those instead of the sign. ones")
+                significant_nodes = self.heatwave_difference_top_nodes[k+1]
+
+            
             increment_to_add_peryear = np.array(trends)[significant_nodes] #based on the trend of those nodes & x_years 
             increment_to_add = increment_to_add_peryear * increment_years
             
@@ -779,13 +1016,8 @@ class LatentSpaceAnalysis:
                                            "new central heatwaves with increment":new_central_heatwaves_mean}
             
             self.dict_heatwave_means_with_increments_split[clusterID]=np.array(z_news)
-
-
-
-
-
-    
-
+            
+ 
 
 
 

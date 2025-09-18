@@ -161,6 +161,73 @@ def plot_sample(x, norm_method, title):
   plt.show()
   plt.close()
     
+    
+def plot_sample_5d(x, norm_method, title):
+        
+    """Plots one sample (either input or predicted) """
+    #   matplotlib.rc('font', **{'family': 'serif', 'serif': ['Computer Modern'], 'size': 40})
+    #   matplotlib.rc('text', usetex=True)
+    fig_width = 60
+    fig_height = 10
+    fig, axes = plt.subplots(2, 1, figsize=(fig_width, fig_height))
+
+    if norm_method == "standardized":
+        vmin, vmax = -3, 3
+    elif norm_method == "standardization_cut":
+        vmin, vmax = -1, 1
+    elif norm_method == "standardization_cut_1.5":
+        vmin, vmax = -1.5, 1.5
+    elif norm_method == "difference":
+        vmin, vmax = -0.5, 0.5
+    else:
+        vmin, vmax = 0, 1
+
+
+    stream = np.nanmean(x[:, :, :, 0], axis=2)
+    psl    = np.nanmean(x[:, :, :, 1], axis=2)
+
+    #plot stream function
+    ax1 = plt.subplot(2, 1, 1, projection=ccrs.PlateCarree())
+    cs = ax1.pcolormesh(LONS, LATS, stream, transform=ccrs.PlateCarree(),
+                       cmap="seismic", vmin=vmin, vmax=vmax)
+    ax1.coastlines()
+    ax1.set_title("Streamfunction 250hPa", fontsize=25)
+    gl1 = ax1.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
+                      linewidth=2, color='gray', alpha=0.5, linestyle='--')
+    gl1.xlabels_top    = False
+    gl1.xlabels_bottom = False
+    gl1.ylabels_right  = False
+    gl1.ylabels_left = True
+
+
+    #plot sea level pressure
+    ax2 = plt.subplot(2, 1, 2, projection=ccrs.PlateCarree())
+    cs = ax2.pcolormesh(LONS, LATS, psl, transform=ccrs.PlateCarree(),
+                       cmap="seismic", vmin=vmin, vmax=vmax)
+    ax2.set_title("Sea Level Pressure", fontsize=25)
+
+    ax2.coastlines()
+    gl2 = ax2.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
+                      linewidth=2, color='gray', alpha=0.5, linestyle='--')
+    gl2.xlocator = mticker.FixedLocator([-60, -40, -20, 0, 20, 40])
+    gl2.xlabels_top   = False
+    gl2.ylabels_right = False
+    gl2.ylabels_left = True
+
+    h_space = 0.3
+    #w_space = h_space * fig_height / fig_width
+    w_space = 0.03
+    fig.subplots_adjust(wspace=w_space, hspace=h_space)
+    fig.subplots_adjust(right=0.95)
+#     ax_cbar = fig.add_axes([0.96, 0.165, 0.01, 0.675])
+    ax_cbar = fig.add_axes([0.63, 0.165, 0.01, 0.675])
+    fig.colorbar(cs, cax=ax_cbar, label="std")
+
+    plt.suptitle(title, fontsize=50, x=0.54)
+
+    plt.show()
+    plt.close()
+    
 #######
 ## RECONSTRUCTION FUNCTIONS
 #######
