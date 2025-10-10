@@ -332,7 +332,7 @@ class Clustering:
         plt.show()
         
 
-    def plot_heatwave_sample(self, x, title, diff_plot=False, cmap_stream="seismic"):
+    def plot_heatwave_sample(self, x, title, diff_plot=False):
         """Plots one sample (either input or predicted) """
         
         import warnings
@@ -347,8 +347,8 @@ class Clustering:
         fig, axes = plt.subplots(2, 5, figsize=(fig_width, fig_height))
 
         if self.stand_method == "standardization_cut":
-            vmin_s, vmax_s = -1.5, 1.5
-            vmin_p, vmax_p = -1.5, 1.5
+            vmin_s, vmax_s = -1, 1
+            vmin_p, vmax_p = -1, 1
             label_p, label_s = "std", "std"
             
         elif self.stand_method == "RAW":
@@ -381,7 +381,7 @@ class Clustering:
             #plot stream function
             ax = plt.subplot(2, 5, t + 1, projection=ccrs.PlateCarree())
             cs_s = ax.pcolormesh(LONS, LATS, stream, transform=ccrs.PlateCarree(),
-                               cmap=cmap_stream, vmin=vmin_s, vmax=vmax_s)
+                               cmap="PiYG_r", vmin=vmin_s, vmax=vmax_s)
             ax.coastlines()
             ax.set_title("Day {}".format(t+1))
             gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
@@ -401,7 +401,7 @@ class Clustering:
             #plot sea level pressure
             ax = plt.subplot(2, 5, t + 6, projection=ccrs.PlateCarree())
             cs_p = ax.pcolormesh(LONS, LATS, psl, transform=ccrs.PlateCarree(),
-                               cmap="seismic", vmin=vmin_p, vmax=vmax_p)
+                               cmap="bwr", vmin=vmin_p, vmax=vmax_p)
             ax.coastlines()
             gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
                               linewidth=2, color='gray', alpha=0.5, linestyle='--')
@@ -513,7 +513,7 @@ class Clustering:
         plt.show()
         plt.close()    
         
-    def plot_central_heatwaves(self, n_closest=1, savefig=False, cmap_stream="seismic"):
+    def plot_central_heatwaves(self, n_closest=1, savefig=False):
         """plot central heatwaves of clusters"""
 #         assert to_plot in ["std", "raw", "raw_std"], "data not available"
         
@@ -554,7 +554,7 @@ class Clustering:
         #actual plotting...
         for clusterid, heatwave_mean in central_heatwave_data.items():
             self.plot_heatwave_sample(heatwave_mean, 
-                             f"Central Heatwave cluster ID {clusterid} \n {self.cluster_model_name} - {self.cluster_type} - n_closest={n_closest}", cmap_stream=cmap_stream)
+                             f"Central Heatwave cluster ID {clusterid} \n {self.cluster_model_name} - {self.cluster_type} - n_closest={n_closest}")
     
     def plot_central_heatwaves_temperature(self, n_closest=1, savefig=False):
         """plot central heatwaves of clusters"""

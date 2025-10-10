@@ -101,15 +101,22 @@ def plot_sample(x, norm_method, title):
   fig_width = 60
   fig_height = 10
   fig, axes = plt.subplots(2, 5, figsize=(fig_width, fig_height))
+  label_p, label_s = "std", "std"
+  cmap_p, cmap_s = "bwr", "PiYG_r"
+
 
   if norm_method == "standardized":
     vmin, vmax = -3, 3
+
   elif norm_method == "standardization_cut":
     vmin, vmax = -1, 1
+
   elif norm_method == "standardization_cut_1.5":
-    vmin, vmax = -1.5, 1.5
+    vmin, vmax = -1.5, 1.5 
+
   elif norm_method == "difference":
-    vmin, vmax = -0.5, 0.5
+    vmin, vmax = -0.3, 0.3
+    cmap_p, cmap_s = "RdBu_r", "RdBu_r"
   else:
     vmin, vmax = 0, 1
 
@@ -119,42 +126,58 @@ def plot_sample(x, norm_method, title):
 
     #plot stream function
     ax = plt.subplot(2, 5, t + 1, projection=ccrs.PlateCarree())
-    cs = ax.pcolormesh(LONS, LATS, stream, transform=ccrs.PlateCarree(),
-                       cmap="seismic", vmin=vmin, vmax=vmax)
+    cs_s = ax.pcolormesh(LONS, LATS, stream, transform=ccrs.PlateCarree(),
+                       cmap=cmap_s, vmin=vmin, vmax=vmax) #seismic
     ax.coastlines()
-    ax.set_title("Day {}".format(t))
+    ax.set_title("Day {}".format(t), fontsize=35)
     gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
                       linewidth=2, color='gray', alpha=0.5, linestyle='--')
     gl.xlabels_top    = False
     gl.xlabels_bottom = False
     gl.ylabels_right  = False
+    gl.xlabel_style = {'size': 40}
+    gl.ylabel_style = {'size': 40}
     if t == 0:
       gl.ylabels_left = True
     else:
       gl.ylabels_left = False
+    
+    if t == 4:
+      ax_cbar = fig.add_axes([0.96, 0.515, 0.01, 0.3]) 
+      cbar = fig.colorbar(cs_s, cax=ax_cbar, label=label_s)
+      cbar.ax.tick_params(labelsize=20) 
+
 
     #plot sea level pressure
     ax = plt.subplot(2, 5, t + 6, projection=ccrs.PlateCarree())
-    cs = ax.pcolormesh(LONS, LATS, psl, transform=ccrs.PlateCarree(),
-                       cmap="seismic", vmin=vmin, vmax=vmax)
+    cs_p = ax.pcolormesh(LONS, LATS, psl, transform=ccrs.PlateCarree(),
+                       cmap=cmap_p, vmin=vmin, vmax=vmax) #seismic
     ax.coastlines()
     gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
                       linewidth=2, color='gray', alpha=0.5, linestyle='--')
     gl.xlocator = mticker.FixedLocator([-60, -40, -20, 0, 20, 40])
     gl.xlabels_top   = False
     gl.ylabels_right = False
+    gl.xlabel_style = {'size': 40}
+    gl.ylabel_style = {'size': 40}
     if t == 0:
       gl.ylabels_left = True
     else:
       gl.ylabels_left = False    
+    
+    if t == 4:
+      ax_cbar = fig.add_axes([0.96, 0.165, 0.01, 0.3]) 
+      cbar = fig.colorbar(cs_p, cax=ax_cbar, label=label_p)
+      cbar.ax.tick_params(labelsize=20) 
+
 
   h_space = -0.14
   #w_space = h_space * fig_height / fig_width
   w_space = 0.03
   fig.subplots_adjust(wspace=w_space, hspace=h_space)
   fig.subplots_adjust(right=0.95)
-  ax_cbar = fig.add_axes([0.96, 0.165, 0.01, 0.675])
-  fig.colorbar(cs, cax=ax_cbar)
+#   ax_cbar = fig.add_axes([0.96, 0.165, 0.01, 0.675])
+#   fig.colorbar(cs, cax=ax_cbar)
 
   plt.suptitle(title, fontsize=50)
 
@@ -170,6 +193,7 @@ def plot_sample_5d(x, norm_method, title):
     fig_width = 60
     fig_height = 10
     fig, axes = plt.subplots(2, 1, figsize=(fig_width, fig_height))
+    cmap_p, cmap_s = "bwr", "PiYG_r"
 
     if norm_method == "standardized":
         vmin, vmax = -3, 3
@@ -178,7 +202,9 @@ def plot_sample_5d(x, norm_method, title):
     elif norm_method == "standardization_cut_1.5":
         vmin, vmax = -1.5, 1.5
     elif norm_method == "difference":
-        vmin, vmax = -0.5, 0.5
+        vmin, vmax = -0.3, 0.3
+        cmap_p, cmap_s = "RdBu_r", "RdBu_r"
+
     else:
         vmin, vmax = 0, 1
 
@@ -189,7 +215,7 @@ def plot_sample_5d(x, norm_method, title):
     #plot stream function
     ax1 = plt.subplot(2, 1, 1, projection=ccrs.PlateCarree())
     cs = ax1.pcolormesh(LONS, LATS, stream, transform=ccrs.PlateCarree(),
-                       cmap="seismic", vmin=vmin, vmax=vmax)
+                       cmap=cmap_s, vmin=vmin, vmax=vmax)
     ax1.coastlines()
     ax1.set_title("Streamfunction 250hPa", fontsize=25)
     gl1 = ax1.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
@@ -198,12 +224,14 @@ def plot_sample_5d(x, norm_method, title):
     gl1.xlabels_bottom = False
     gl1.ylabels_right  = False
     gl1.ylabels_left = True
+    gl1.xlabel_style = {'size': 20}
+    gl1.ylabel_style = {'size': 20}
 
 
     #plot sea level pressure
     ax2 = plt.subplot(2, 1, 2, projection=ccrs.PlateCarree())
     cs = ax2.pcolormesh(LONS, LATS, psl, transform=ccrs.PlateCarree(),
-                       cmap="seismic", vmin=vmin, vmax=vmax)
+                       cmap=cmap_p, vmin=vmin, vmax=vmax)
     ax2.set_title("Sea Level Pressure", fontsize=25)
 
     ax2.coastlines()
@@ -213,6 +241,9 @@ def plot_sample_5d(x, norm_method, title):
     gl2.xlabels_top   = False
     gl2.ylabels_right = False
     gl2.ylabels_left = True
+    gl2.xlabel_style = {'size': 20}
+    gl2.ylabel_style = {'size': 20}
+
 
     h_space = 0.3
     #w_space = h_space * fig_height / fig_width
@@ -221,7 +252,9 @@ def plot_sample_5d(x, norm_method, title):
     fig.subplots_adjust(right=0.95)
 #     ax_cbar = fig.add_axes([0.96, 0.165, 0.01, 0.675])
     ax_cbar = fig.add_axes([0.63, 0.165, 0.01, 0.675])
-    fig.colorbar(cs, cax=ax_cbar, label="std")
+    cbar = fig.colorbar(cs, cax=ax_cbar, label="std")
+    cbar.ax.tick_params(labelsize=20) 
+
 
     plt.suptitle(title, fontsize=50, x=0.54)
 
