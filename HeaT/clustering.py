@@ -107,10 +107,13 @@ class Clustering:
         
     def load_t2m_data(self):
         name_path_dict = {
-            't2m': ('t2m','/1940-2023_T2M_westEU_June23-JA-Sept7_LENTISGRID.nc','/T2M_westEU_LENTIS_1940-2023_90thp_15d.nc'),
+            't2m': ('t2m','ERA5/1940-2023_T2M_westEU_June23-JA-Sept7_LENTISGRID.nc','ERA5/T2M_westEU_LENTIS_1940-2023_90thp_15d.nc'),
             't2m_dynamic': ("T2M_dynamic", '/T2M_decomposition/T2M_westEU_June23-JA-Sept7_LENTIS=True_decomposed_1940-2023_window=20_CV=False_alpha=10.nc', '/T2M_decomposition/90th_percentile/T2M_dynamic_westEU_LENTIS_1940-2023.nc'),
             't2m_minus_thermo': ("T2M_minus_thermo",'/T2M_decomposition/T2M_minus_thermo_westEU_LENTIS_1940-2023.nc', '/T2M_decomposition/90th_percentile/T2M_minus_thermo_westEU_LENTIS_1940-2023.nc')}
-        self.t2m_data = xr.open_dataset(f"/home/thappe/data{name_path_dict[self.t2m_name][1]}")[name_path_dict[self.t2m_name][0]].astype("float16")
+        self.t2m_data = xr.open_dataset(f"/home/thappe/data/{name_path_dict[self.t2m_name][1]}")[name_path_dict[self.t2m_name][0]].astype("float16")
+
+        if self.t2m_name == 't2m':
+            self.t2m_data = self.t2m_data.rename({"lon":"longitude", "lat":"latitude"})
         
         
     def clustering(self):
@@ -220,12 +223,12 @@ class Clustering:
 
             # # Add some text for labels, title and custom x-axis tick labels, etc.
             ax.set_ylabel('nr of heatwaves')
-            ax.set_title(f"Cluster nr {cluster_id}")
+            ax.set_title(f"Cluster {cluster_id}")
             ax.set_xticks(np.arange(1940,2024,10))
             ax.legend(loc='upper right') #, ncols=1)
             ax.set_ylim(0,15)
 
-        fig.suptitle(f'Heatwave types over the years \n {self.t2m_name} - {self.cluster_model_name} {self.cluster_type}', fontsize=18)
+        fig.suptitle(f'Heatwave types over the years \n {self.t2m_name}', fontsize=18) # - {self.cluster_model_name} {self.cluster_type} 
         if savefig:
             fig.savefig(f"{outpathfigure}/Clusters_over_time_{self.t2m_name}_{self.cluster_model_name}_{self.cluster_type}.png",)
         
@@ -237,7 +240,6 @@ class Clustering:
         "clusters over time with multiple startyears, with plot"
         
         import statsmodels.api as sm
-        
         
         
         ### counting the amount of heatwaves per cluster, per year 
@@ -273,13 +275,14 @@ class Clustering:
 
             # # Add some text for labels, title and custom x-axis tick labels, etc.
             ax.set_ylabel('nr of heatwaves')
-            ax.set_title(f"Cluster nr {cluster_id}")
+            ax.set_title(f"Cluster {cluster_id}")
             ax.set_xticks(np.arange(1940,2024,10))
-            ax.legend(loc='upper right') #, ncols=1)
+            ax.legend(loc='upper left') #, ncols=1)
             ax.set_ylim(0,15)
 
-        fig.suptitle(f'Heatwave types over the years \n {self.t2m_name} - {self.cluster_model_name} {self.cluster_type}', fontsize=18)
+        fig.suptitle(f'Heatwave types over the years', fontsize=18) #\n {self.t2m_name} - {self.cluster_model_name} {self.cluster_type}
         if savefig:
+            print(f"saved at {outpathfigure}/Clusters_over_time_{self.t2m_name}_{self.cluster_model_name}_{self.cluster_type}.png ")
             fig.savefig(f"{outpathfigure}/Clusters_over_time_{self.t2m_name}_{self.cluster_model_name}_{self.cluster_type}.png",)
         
         plt.show()
@@ -337,6 +340,7 @@ class Clustering:
         
         import warnings
         warnings.filterwarnings('ignore')
+
         
         from HeaT.reconstruction import LONS, LATS
         LONS, LATS = np.meshgrid(LONS, LATS, indexing="ij")
@@ -345,6 +349,8 @@ class Clustering:
         fig_width = 25
         fig_height = 5
         fig, axes = plt.subplots(2, 5, figsize=(fig_width, fig_height))
+        for ax in axes.flat:
+            ax.remove()
 
         if self.stand_method == "standardization_cut":
             vmin_s, vmax_s = -1, 1
@@ -374,25 +380,26 @@ class Clustering:
             if self.stand_method == "RAW" or self.stand_method == "ann_var_removed": 
                 stream = stream / 1000000
                 psl    = psl / 100 
-            
-#             print(np.min(stream), np.max(stream))
-#             print(np.min(psl), np.max(psl))
+        
 
             #plot stream function
             ax = plt.subplot(2, 5, t + 1, projection=ccrs.PlateCarree())
+            
             cs_s = ax.pcolormesh(LONS, LATS, stream, transform=ccrs.PlateCarree(),
                                cmap="PiYG_r", vmin=vmin_s, vmax=vmax_s)
             ax.coastlines()
             ax.set_title("Day {}".format(t+1))
             gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
                               linewidth=2, color='gray', alpha=0.5, linestyle='--')
-            gl.xlabels_top    = False
-            gl.xlabels_bottom = False
-            gl.ylabels_right  = False
+
+            
+            gl.top_labels    = False
+            gl.bottom_labels = False
+            gl.right_labels  = False
             if t == 0:
-                gl.ylabels_left = True
+                gl.left_labels = True
             else:
-                gl.ylabels_left = False
+                gl.left_labels = False
             
             if t == 4:
                 ax_cbar = fig.add_axes([0.96, 0.515, 0.01, 0.3]) #
@@ -406,12 +413,13 @@ class Clustering:
             gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
                               linewidth=2, color='gray', alpha=0.5, linestyle='--')
             gl.xlocator = mticker.FixedLocator([-60, -40, -20, 0, 20, 40])
-            gl.xlabels_top   = False
-            gl.ylabels_right = False
+            
+            gl.top_labels   = False
+            gl.right_labels = False
             if t == 0:
-                gl.ylabels_left = True
+                gl.left_labels = True
             else:
-                gl.ylabels_left = False    
+                gl.left_labels = False    
                 
             if t == 4:
                 ax_cbar = fig.add_axes([0.96, 0.165, 0.01, 0.3]) 
@@ -422,9 +430,6 @@ class Clustering:
         w_space = 0.03 # 0.03
         fig.subplots_adjust(wspace=w_space, hspace=h_space)
         fig.subplots_adjust(right=0.95)
-#         ax_cbar = fig.add_axes([0.96, 0.165, 0.01, 0.675])
-#         fig.colorbar(cs_s, cax=ax_cbar)
-#         fig.colorbar(cs_p, cax=ax_cbar)
 
         plt.suptitle(title, fontsize=18)
 
@@ -444,6 +449,8 @@ class Clustering:
         fig_width = 60
         fig_height = 10
         fig, axes = plt.subplots(1, 5, figsize=(fig_width, fig_height))
+        for ax in axes:
+            ax.remove()
         
         mean_tas = self.t2m_data.mean(dim=("time"), skipna=False)
 
@@ -456,7 +463,7 @@ class Clustering:
                 temp=  x[t, :, :] - mean_tas
                 vmin, vmax= -8, 8
                 if composite:
-                    vmin, vmax= -4, 4
+                    vmin, vmax= -3, 3
             cmap="coolwarm"
         
             #plot stream function
@@ -467,13 +474,14 @@ class Clustering:
             ax.set_title(f"Day {t+1}", fontsize=35)
             gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True, 
                           linewidth=2, color='gray', alpha=0.1, linestyle='--')
-            gl.xlabels_top    = False
-            gl.xlabels_bottom = True
-            gl.ylabels_right  = False
+            
+            gl.top_labels    = False
+            gl.bottom_labels = True
+            gl.right_labels  = False
             if t == 0:
-                gl.ylabels_left = True
+                gl.left_labels = True
             else:
-                gl.ylabels_left = False
+                gl.left_labels = False
 
             gl.xformatter = LONGITUDE_FORMATTER
             gl.yformatter = LATITUDE_FORMATTER
@@ -508,7 +516,7 @@ class Clustering:
         plt.suptitle(title, fontsize=45, y=1.1)
         
         if savefig:
-            plt.savefig(filename, bbox_inches='tight')
+            plt.savefig(filename, bbox_inches='tight', dpi=400)
             
         plt.show()
         plt.close()    
@@ -556,7 +564,7 @@ class Clustering:
             self.plot_heatwave_sample(heatwave_mean, 
                              f"Central Heatwave cluster ID {clusterid} \n {self.cluster_model_name} - {self.cluster_type} - n_closest={n_closest}")
     
-    def plot_central_heatwaves_temperature(self, n_closest=1, savefig=False):
+    def plot_central_heatwaves_temperature(self, n_closest=1, filename="", savefig=False, temp_name="t2m_minus_thermo"):
         """plot central heatwaves of clusters"""
 
         if self.cluster_model_name == "GMM":
@@ -564,9 +572,22 @@ class Clustering:
         elif self.cluster_model_name == "Kmeanseucl":
             centers = self.cluster_model.cluster_centers_ 
             
-        if self.t2m_data == None:
+        if type(self.t2m_data) == type(None):
             #t2m data not yet loaded
             self.load_t2m_data()
+
+        if self.t2m_name != temp_name:
+            """Plotting different temperature then the self.t2m_data"""
+            prev = self.t2m_name
+            # load new t2m data
+            assert temp_name in ["t2m", "t2m_dynamic", "t2m_minus_thermo"]
+            print("Warning! self.t2m_data will be updated to new t2m_name data")
+            self.t2m_name = temp_name
+            self.load_t2m_data()
+            # #return name to original one
+            self.t2m_name = prev
+
+            
 
         #find the distance between the heatwave_means and the centers, and select the closest n
         central_heatwave_index = {}
@@ -594,7 +615,8 @@ class Clustering:
         for clusterid, heatwave_mean in central_heatwave_data.items():
             self.plot_temperature(heatwave_mean, 
                              f"Central Heatwave cluster ID {clusterid} \n {self.cluster_model_name} - {self.cluster_type} - n_closest={n_closest}",
-                                 ANOM=True)
+                                 ANOM=True,
+                                 filename=f"{filename}_{clusterid}.png", savefig=savefig)
             
     def plot_central_heatwaves_decadal_changes(self, n_closest=1, year_blocks:list=[(1940, 1970), (1990, 2020)], 
                                                savefig=False):
@@ -658,6 +680,181 @@ class Clustering:
             self.plot_heatwave_sample(heatwave_mean, 
                              f"Difference plot \n Central Heatwave cluster ID {clusterid} \n {self.cluster_model_name} - {self.cluster_type} - n_closest={n_closest}",
                                      diff_plot=True)
+
+        from sklearn.metrics.pairwise import pairwise_distances_argmin, cosine_similarity
+
+
+    def plot_heatwave_sample_contours(self, x, x_raw, title, diff_plot=False,
+                                     cluster_id=999, savefig=False, outpath="",
+                                     n_closest=1):
+            """Plots one sample (either input or predicted) """
+            
+            import warnings
+            warnings.filterwarnings('ignore')
+    
+            
+            from HeaT.reconstruction import LONS, LATS
+            LONS, LATS = np.meshgrid(LONS, LATS, indexing="ij")
+    
+    
+            fig_width = 25
+            fig_height = 5
+        
+            fig, axes = plt.subplots(2, 5, figsize=(fig_width, fig_height))
+            for ax in axes.flat:
+                ax.remove()
+    
+            vmin_s, vmax_s = -1, 1
+            vmin_p, vmax_p = -1, 1
+            label_p, label_s = "std", "std"
+            
+            vmin_s_raw, vmax_s_raw = -90, 10
+            vmin_p_raw, vmax_p_raw = 990, 1030
+            label_p_raw, label_s_raw = "hPa", "m2/s"
+                
+    
+            for t in range(5):
+                stream = x[:, :, t, 0]
+                psl    = x[:, :, t, 1] 
+                stream_raw = x_raw[:, :, t, 0] / 1000000
+                psl_raw = x_raw[:, :, t, 1] / 100 
+                
+                # if self.stand_method == "RAW" or self.stand_method == "ann_var_removed": 
+                #     stream = stream / 1000000
+                #     psl    = psl / 100 
+            
+    
+                #plot stream function
+                ax = plt.subplot(2, 5, t + 1, projection=ccrs.PlateCarree())
+                
+                cs_s = ax.pcolormesh(LONS, LATS, stream, transform=ccrs.PlateCarree(),
+                                   cmap="PiYG_r", vmin=vmin_s, vmax=vmax_s)
+    
+                contours = ax.contour(LONS, LATS, stream_raw, levels=np.linspace(vmin_s_raw, vmax_s_raw, 11),
+                          colors='black', linewidths=0.8, transform=ccrs.PlateCarree())
+    
+                ax.clabel(contours, inline=True, fontsize=8)
+    
+                
+                ax.coastlines()
+                ax.set_title("Day {}".format(t+1))
+                gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
+                                  linewidth=2, color='gray', alpha=0.5, linestyle='--')
+    
+                
+                gl.top_labels    = False
+                gl.bottom_labels = False
+                gl.right_labels  = False
+                if t == 0:
+                    gl.left_labels = True
+                else:
+                    gl.left_labels = False
+                
+                if t == 4:
+                    ax_cbar = fig.add_axes([0.96, 0.515, 0.01, 0.3]) #
+                    fig.colorbar(cs_s, cax=ax_cbar, label=label_s)
+    
+                #plot sea level pressure
+                ax = plt.subplot(2, 5, t + 6, projection=ccrs.PlateCarree())
+                cs_p = ax.pcolormesh(LONS, LATS, psl, transform=ccrs.PlateCarree(),
+                                   cmap="bwr", vmin=vmin_p, vmax=vmax_p)
+                
+                contours = ax.contour(LONS, LATS, psl_raw, levels=np.linspace(vmin_p_raw, vmax_p_raw, 11),
+                          colors='black', linewidths=0.8, transform=ccrs.PlateCarree())
+    
+                ax.clabel(contours, inline=True, fontsize=8)
+    
+                ax.coastlines()
+                gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
+                                  linewidth=2, color='gray', alpha=0.5, linestyle='--')
+                gl.xlocator = mticker.FixedLocator([-60, -40, -20, 0, 20, 40])
+                
+                gl.top_labels   = False
+                gl.right_labels = False
+                if t == 0:
+                    gl.left_labels = True
+                else:
+                    gl.left_labels = False    
+                    
+                if t == 4:
+                    ax_cbar = fig.add_axes([0.96, 0.165, 0.01, 0.3]) 
+                    fig.colorbar(cs_p, cax=ax_cbar, label=label_p)
+    
+            h_space = -0.14
+            #w_space = h_space * fig_height / fig_width
+            w_space = 0.03 # 0.03
+            fig.subplots_adjust(wspace=w_space, hspace=h_space)
+            fig.subplots_adjust(right=0.95)
+    
+            plt.suptitle(title, fontsize=18)
+    
+            if savefig == True:
+                plt.savefig(f"{outpath}/central_heatwaves_n={n_closest}_contours_cluster{cluster_id}.png", dpi=400)
+            plt.show()
+            plt.close()
+
+
+    def plot_central_heatwaves_withcontours(self, n_closest=1, savefig=False):
+            """plot central heatwaves of clusters"""
+    #         assert to_plot in ["std", "raw", "raw_std"], "data not available"
+            
+            ## first get heatwave centers - how to do that for kmeans, then just grab centroids instead of means 
+            ### get the centers of the clusters 
+            if self.cluster_model_name == "GMM":
+                centers = self.cluster_model.means_ 
+            elif self.cluster_model_name == "Kmeanseucl":
+                centers = self.cluster_model.cluster_centers_ 
+    
+            #find the distance between the heatwave_means and the centers, and select the closest n
+            central_heatwave_index = {}
+            for i, center in enumerate(centers):
+                similarity = cosine_similarity(center.reshape(1, -1), self.heatwave_means)[0] #calculate cosine similarity
+                closest_heatwave_i = sorted(range(len(similarity)), key=lambda k: similarity[k])[-n_closest:] #get n closest 
+                central_heatwave_index[i+1]=closest_heatwave_i
+                
+            self.central_heatwaves_indices = central_heatwave_index
+            
+            """here I should define which tf_record data I want to plot, now I only do std, but I also want to be 
+            able to plot raw values, and both together"""
+            
+            
+            ### Second get the tfrecord data or some other data
+            central_heatwave_data = {}        
+            for cluster_id, heatwave_indices in central_heatwave_index.items():
+                heatwave_mean_list = []
+                print(cluster_id, heatwave_indices)
+                for i, element in enumerate(self.tf_records.as_numpy_iterator()): #to convert to numpy elements
+                    if type(heatwave_indices) == int:
+                        heatwave_indices = [heatwave_indices] #in case of n_closest==1
+                    if i in heatwave_indices:
+                        heatwave_mean_list.append(element[0])
+                        
+                heatwave_mean = np.nanmean(np.array(heatwave_mean_list), axis=0)
+                central_heatwave_data[cluster_id]=heatwave_mean
+    
+            ##  now also load RAW
+            tf_record_file = f"/home/thappe/data/tf_records/TF_record_ERA5_{self.t2m_name}_1940-2023_RAW.tfrecord"
+            data = load_tfrecords_ERA5(tf_record_file)
+            data_parsed_raw = data.map(parse_function_full_era5)
+    
+            central_heatwave_data_raw = {}        
+            for cluster_id, heatwave_indices in central_heatwave_index.items():
+                heatwave_mean_list = []
+                print(cluster_id, heatwave_indices)
+                for i, element in enumerate(data_parsed_raw.as_numpy_iterator()): #to convert to numpy elements
+                    if type(heatwave_indices) == int:
+                        heatwave_indices = [heatwave_indices] #in case of n_closest==1
+                    if i in heatwave_indices:
+                        heatwave_mean_list.append(element[0])                    
+                heatwave_mean = np.nanmean(np.array(heatwave_mean_list), axis=0)
+                central_heatwave_data_raw[cluster_id]=heatwave_mean
+                    
+            #actual plotting...
+            for clusterid, heatwave_mean in central_heatwave_data.items():
+                self.plot_heatwave_sample_contours(heatwave_mean, central_heatwave_data_raw[cluster_id], 
+                                 f"Central Heatwave cluster ID {clusterid} \n {self.cluster_model_name} - {self.cluster_type} - n_closest={n_closest}",
+                                             cluster_id=clusterid, savefig=savefig, outpath="/home/thappe/HeaT/Figures/closest_heatwaves", n_closest=n_closest)
+        
 
     
         

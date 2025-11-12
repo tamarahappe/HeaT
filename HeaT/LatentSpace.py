@@ -794,6 +794,7 @@ class LatentSpaceAnalysis:
         #get important nodes and new values based on trends
         significant_nodes = np.argwhere(np.array(self.pvals_per_node) <= pvalthresh)[:,0]
         print("nr of sign nodes:", significant_nodes.shape[0])
+        print(significant_nodes, type(significant_nodes))
         
         increment_to_add_peryear = np.array(self.trend_per_node)[significant_nodes] #based on the trend of those nodes & x_years 
         increment_to_add = increment_to_add_peryear * increment_years

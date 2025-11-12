@@ -93,7 +93,7 @@ LATS = np.array([30.5262516 , 31.22800418, 31.92975673, 32.63150925,
                    69.82426517, 70.52600796, 71.22774993, 71.92949096,
                    72.63123095, 73.33296977, 74.03470726, 74.73644324]) 
 
-def plot_sample(x, norm_method, title):
+def plot_sample(x, norm_method, title, savefig=False, outpath="", filename=""):
         
   """Plots one sample (either input or predicted) """
 #   matplotlib.rc('font', **{'family': 'serif', 'serif': ['Computer Modern'], 'size': 40})
@@ -101,6 +101,9 @@ def plot_sample(x, norm_method, title):
   fig_width = 60
   fig_height = 10
   fig, axes = plt.subplots(2, 5, figsize=(fig_width, fig_height))
+  for ax in axes.flat:
+    ax.remove()
+    
   label_p, label_s = "std", "std"
   cmap_p, cmap_s = "bwr", "PiYG_r"
 
@@ -115,7 +118,7 @@ def plot_sample(x, norm_method, title):
     vmin, vmax = -1.5, 1.5 
 
   elif norm_method == "difference":
-    vmin, vmax = -0.3, 0.3
+    vmin, vmax = -0.5, 0.5
     cmap_p, cmap_s = "RdBu_r", "RdBu_r"
   else:
     vmin, vmax = 0, 1
@@ -129,18 +132,18 @@ def plot_sample(x, norm_method, title):
     cs_s = ax.pcolormesh(LONS, LATS, stream, transform=ccrs.PlateCarree(),
                        cmap=cmap_s, vmin=vmin, vmax=vmax) #seismic
     ax.coastlines()
-    ax.set_title("Day {}".format(t), fontsize=35)
+    ax.set_title("Day {}".format(t+1), fontsize=35)
     gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
                       linewidth=2, color='gray', alpha=0.5, linestyle='--')
-    gl.xlabels_top    = False
-    gl.xlabels_bottom = False
-    gl.ylabels_right  = False
+    gl.top_labels    = False
+    gl.bottom_labels = False
+    gl.right_labels  = False
     gl.xlabel_style = {'size': 40}
     gl.ylabel_style = {'size': 40}
     if t == 0:
-      gl.ylabels_left = True
+      gl.left_labels = True
     else:
-      gl.ylabels_left = False
+      gl.left_labels = False
     
     if t == 4:
       ax_cbar = fig.add_axes([0.96, 0.515, 0.01, 0.3]) 
@@ -156,14 +159,14 @@ def plot_sample(x, norm_method, title):
     gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
                       linewidth=2, color='gray', alpha=0.5, linestyle='--')
     gl.xlocator = mticker.FixedLocator([-60, -40, -20, 0, 20, 40])
-    gl.xlabels_top   = False
-    gl.ylabels_right = False
+    gl.top_labels   = False
+    gl.right_labels = False
     gl.xlabel_style = {'size': 40}
     gl.ylabel_style = {'size': 40}
     if t == 0:
-      gl.ylabels_left = True
+      gl.left_labels = True
     else:
-      gl.ylabels_left = False    
+      gl.left_labels = False    
     
     if t == 4:
       ax_cbar = fig.add_axes([0.96, 0.165, 0.01, 0.3]) 
@@ -181,6 +184,8 @@ def plot_sample(x, norm_method, title):
 
   plt.suptitle(title, fontsize=50)
 
+  if savefig == True:
+      fig.savefig(f"{outpath}/{filename}", dpi=400)
   plt.show()
   plt.close()
     
