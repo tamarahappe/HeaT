@@ -195,9 +195,15 @@ def plot_sample_5d(x, norm_method, title):
     """Plots one sample (either input or predicted) """
     #   matplotlib.rc('font', **{'family': 'serif', 'serif': ['Computer Modern'], 'size': 40})
     #   matplotlib.rc('text', usetex=True)
+    
     fig_width = 60
     fig_height = 10
-    fig, axes = plt.subplots(2, 1, figsize=(fig_width, fig_height))
+    # fig, axes = plt.subplots(figsize=(fig_width, fig_height)) #2, 1) #, 
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, 
+                                   figsize=(fig_width, fig_height),
+                                   subplot_kw={'projection': ccrs.PlateCarree()})
+    
     cmap_p, cmap_s = "bwr", "PiYG_r"
 
     if norm_method == "standardized":
@@ -218,7 +224,7 @@ def plot_sample_5d(x, norm_method, title):
     psl    = np.nanmean(x[:, :, :, 1], axis=2)
 
     #plot stream function
-    ax1 = plt.subplot(2, 1, 1, projection=ccrs.PlateCarree())
+    # ax1 = plt.subplot(2, 1, 1, projection=ccrs.PlateCarree())
     cs = ax1.pcolormesh(LONS, LATS, stream, transform=ccrs.PlateCarree(),
                        cmap=cmap_s, vmin=vmin, vmax=vmax)
     ax1.coastlines()
@@ -234,7 +240,7 @@ def plot_sample_5d(x, norm_method, title):
 
 
     #plot sea level pressure
-    ax2 = plt.subplot(2, 1, 2, projection=ccrs.PlateCarree())
+    # ax2 = plt.subplot(2, 1, 2, projection=ccrs.PlateCarree())
     cs = ax2.pcolormesh(LONS, LATS, psl, transform=ccrs.PlateCarree(),
                        cmap=cmap_p, vmin=vmin, vmax=vmax)
     ax2.set_title("Sea Level Pressure", fontsize=25)
@@ -261,7 +267,7 @@ def plot_sample_5d(x, norm_method, title):
     cbar.ax.tick_params(labelsize=20) 
 
 
-    plt.suptitle(title, fontsize=50, x=0.54)
+    plt.suptitle(title, fontsize=50, x=0.54, y=1.02)
 
     plt.show()
     plt.close()
