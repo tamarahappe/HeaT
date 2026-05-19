@@ -15,6 +15,8 @@ import warnings
 
 import sys
 
+####TRYING THIS TO REDUCE FILE SIZE OF NOTEBOOKS 
+plt.rcParams['figure.dpi'] = 72  
 
 HOME = "/home/thappe"
 # HOME = "/scistor/ivm/the410/"

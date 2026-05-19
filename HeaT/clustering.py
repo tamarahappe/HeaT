@@ -18,6 +18,9 @@ import xarray as xr
 import pickle 
 from sklearn.metrics.pairwise import pairwise_distances_argmin, cosine_similarity
 
+####TRYING THIS TO REDUCE FILE SIZE OF NOTEBOOKS 
+plt.rcParams['figure.dpi'] = 72  
+
 
 # HOME = "/home/thappe/" #snellius
 # os.chdir(f"{HOME}HeaT")
