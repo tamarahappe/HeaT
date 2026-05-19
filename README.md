@@ -1,4 +1,4 @@
-# HeaT - An Interpretable Latent Space to study European Heatwave Dynamics
+# HeaT 
 
 This repository contains the data and code to reproduce the following paper:
 
